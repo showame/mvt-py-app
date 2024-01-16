@@ -58,7 +58,7 @@ def main():
         try:
             # Create a full backup
             subprocess.run(["idevicebackup2", "backup", "--full", backup_path], check=True)
-            messagebox.showinfo("Success", "Backup created successfully")
+            messagebox.showinfo("Success", "Backup created successfully!")
 
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Error creating backup: {e.stderr}")
