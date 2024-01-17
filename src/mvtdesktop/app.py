@@ -66,14 +66,55 @@ def main():
     def browse_path():
         # Select a backup path with a filedialog
         selected_path = filedialog.askdirectory()
-        backup_path_entry.delete(0, tk.END)
-        backup_path_entry.insert(0, selected_path)
+        backup_save_path_entry.delete(0, tk.END)
+        backup_save_path_entry.insert(0, selected_path)
+
+    def save_password_to_key_file(password_entry):
+        password = password_entry.get()
+        key_file_path = '/path/to/save/key'
+        backup_path = '/path/to/backup'
+
+        command = f'mvt-ios extract-key -p {password} -k {key_file_path} {backup_path}'
+
+        try:
+            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            messagebox.showinfo("Success", f"Password saved to key file:\n{key_file_path}")
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Error", f"Command execution failed:\n{e.stderr}")
+
+    def decrypt_backup_command(backup_password_entry):
+        password = backup_save_path_entry.get()
+        #TODO: get paths from user
+        decrypted_path = '/path/to/decrypted'
+        encrypted_path = '/path/to/backup'
+
+        command = f'MVT_IOS_BACKUP_PASSWORD="{password}" mvt-ios decrypt-backup -d {decrypted_path} {encrypted_path}'
+
+        try:
+            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            messagebox.showinfo("Success", result.stdout)
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Error", f"Backup Decryption failed:\n{e.stderr}")
+
+    def check_backup():
+        #TODO: get paths from user
+        output_path = '/path/to/output'
+        check_path = '/path/to/backup/udid'
+
+        command = f'mvt-ios check-backup --output {output_path} {check_path}'
+
+        try:
+            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            messagebox.showinfo("Success", result.stdout)
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Error", f"Execution of backup check failed:\n{e.stderr}")
+
     # Main window creation
     root = tk.Tk()
     root.title("iPhone Connection Status")
 
     # W x H of the window
-    root.geometry("600x400")
+#    root.geometry("600x400")
 
     # Label to display the device connection status
     status_label = tk.Label(root, text="")
@@ -86,17 +127,37 @@ def main():
     button = tk.Button(root, text="Enable Backup Encryption", command=enable_backup_encryption)
     button.pack(pady=10)
 
-    # Entry field for backup path
-    backup_path_entry = tk.Entry(root, width=40)
-    backup_path_entry.pack(pady=10)
+    # Entry field for backup save path
+    backup_save_path_entry = tk.Entry(root, width=40)
+    backup_save_path_entry.pack(pady=10)
 
     # Button to browse for a backup path
     browse_button = tk.Button(root, text="Browse", command=browse_path)
     browse_button.pack(pady=5)
 
     # Button to create backup
-    create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_path_entry.get()))
+    create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
     create_backup_button.pack(pady=10)
+
+    # Backup Encryption password entry widget
+    backup_password_label = tk.Label(root, text="Enter Backup Encryption Password:")
+    backup_password_label.pack(pady=10)
+    backup_password_entry = tk.Entry(root, show="*")
+    backup_password_entry.pack(pady=10)
+
+    # Button to save password to key file
+    # TODO: manage securely lifecycle of key filer
+    key_file_save_button = tk.Button(root, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
+    key_file_save_button.pack(pady=10)
+ 
+    # Decryption backup button
+    # TODO: add support for decryption with key file
+    run_decrypt_backup_button = tk.Button(root, text="Decrypt backup button", command=lambda: decrypt_backup_command(backup_password_entry))
+    run_decrypt_backup_button.pack(pady=20)
+
+    # Button to run the backup check
+    backup_check_button = tk.Button(root, text="Check Backup for Malware", command=check_backup)
+    backup_check_button.pack(pady=10)
 
     # Tkinter event loop
     root.mainloop()
