@@ -45,14 +45,28 @@ def main():
         root.after(5000, check_device_status)
 
     def enable_backup_encryption():
+        global encryption_enabled
         try:
             # Run idevicebackup2 to enable backup encryption
             subprocess.run(["idevicebackup2", "-i", "encryption", "on"], check=True)
+    
+            # Update the encryption status and labels
+            encryption_enabled = True
+            update_encryption_labels()
             
             messagebox.showinfo("Success", "Backup encryption enabled successfully")
             
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Error enabling backup encryption: {e.stderr}")
+    
+    def update_encryption_labels():
+        if encryption_enabled:
+            # Encryption is enabled
+            encryption_label.config(text="\u2713 Backup encryption enabled")  # Use checkmark symbol
+        else:
+            # Encryption is disabled
+            encryption_label.config(text="\u2717 Backup encryption disabled")  # Use cross symbol
+    
 
     def create_backup(backup_path):
         try:
@@ -114,7 +128,7 @@ def main():
     root.title("iPhone Connection Status")
 
     # W x H of the window
-#    root.geometry("600x400")
+    root.geometry("1200x800")
 
     # Label to display the device connection status
     status_label = tk.Label(root, text="")
@@ -122,6 +136,13 @@ def main():
 
     # Device detection loop
     check_device_status()
+
+    encryption_enabled = False
+
+    # Create the label for encryption status
+    encryption_label = tk.Label(root, text="")
+    update_encryption_labels()  # Initialize label based on encryption status
+    encryption_label.pack(side=tk.RIGHT, pady=10)
 
     # Backup Encryption Button
     button = tk.Button(root, text="Enable Backup Encryption", command=enable_backup_encryption)
@@ -146,7 +167,7 @@ def main():
     backup_password_entry.pack(pady=10)
 
     # Button to save password to key file
-    # TODO: manage securely lifecycle of key filer
+    # TODO: manage securely lifecycle of key file
     key_file_save_button = tk.Button(root, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
     key_file_save_button.pack(pady=10)
  
