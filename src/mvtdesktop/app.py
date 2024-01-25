@@ -20,7 +20,7 @@ def main():
     def ensure_pairing():
         try:
             # Run debug and pairing commands (sudo usbmuxd; idevicepair pair)
-            #subprocess.run(["sudo", "usbmuxd", "-f", "-d"], check=True)
+            # subprocess.run(["sudo", "usbmuxd", "-f", "-d"], check=True)
             subprocess.run(["idevicepair", "pair"], check=True)
 
             print("Pairing started successfully")
@@ -49,16 +49,16 @@ def main():
         try:
             # Run idevicebackup2 to enable backup encryption
             subprocess.run(["idevicebackup2", "-i", "encryption", "on"], check=True)
-    
+
             # Update the encryption status and labels
             encryption_enabled = True
             update_encryption_labels()
-            
+
             messagebox.showinfo("Success", "Backup encryption enabled successfully")
-            
+
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Error enabling backup encryption: {e.stderr}")
-    
+
     def update_encryption_labels():
         if encryption_enabled:
             # Encryption is enabled
@@ -66,7 +66,6 @@ def main():
         else:
             # Encryption is disabled
             encryption_label.config(text="\u2717 Backup encryption disabled")  # Use cross symbol
-    
 
     def create_backup(backup_path):
         try:
@@ -98,7 +97,7 @@ def main():
 
     def decrypt_backup_command(backup_password_entry):
         password = backup_save_path_entry.get()
-        #TODO: get paths from user
+        # TODO: get paths from the user
         decrypted_path = '/path/to/decrypted'
         encrypted_path = '/path/to/backup'
 
@@ -111,7 +110,7 @@ def main():
             messagebox.showerror("Error", f"Backup Decryption failed:\n{e.stderr}")
 
     def check_backup():
-        #TODO: get paths from user
+        # TODO: get paths from the user
         output_path = '/path/to/output'
         check_path = '/path/to/backup/udid'
 
@@ -132,7 +131,7 @@ def main():
 
     # Label to display the device connection status
     status_label = tk.Label(root, text="")
-    status_label.pack(pady=10)
+    status_label.grid(row=0, column=0, columnspan=2, pady=10)
 
     # Device detection loop
     check_device_status()
@@ -142,44 +141,45 @@ def main():
     # Create the label for encryption status
     encryption_label = tk.Label(root, text="")
     update_encryption_labels()  # Initialize label based on encryption status
-    encryption_label.pack(side=tk.RIGHT, pady=10)
+    encryption_label.grid(row=1, column=1, pady=10)
 
     # Backup Encryption Button
     button = tk.Button(root, text="Enable Backup Encryption", command=enable_backup_encryption)
-    button.pack(pady=10)
+    button.grid(row=1, column=0, pady=10)
 
     # Entry field for backup save path
     backup_save_path_entry = tk.Entry(root, width=40)
-    backup_save_path_entry.pack(pady=10)
+    backup_save_path_entry.grid(row=2, column=0, padx=2, pady=10)
 
     # Button to browse for a backup path
     browse_button = tk.Button(root, text="Browse", command=browse_path)
-    browse_button.pack(pady=5)
-
-    # Button to create backup
-    create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
-    create_backup_button.pack(pady=10)
+    browse_button.grid(row=2, column=1, padx=2, pady=10)
 
     # Backup Encryption password entry widget
     backup_password_label = tk.Label(root, text="Enter Backup Encryption Password:")
-    backup_password_label.pack(pady=10)
+    backup_password_label.grid(row=3, column=0, padx=5, pady=10)
+
     backup_password_entry = tk.Entry(root, show="*")
-    backup_password_entry.pack(pady=10)
+    backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
+
+    # Button to create backup
+    create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
+    create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
 
     # Button to save password to key file
-    # TODO: manage securely lifecycle of key file
+    # TODO: manage securely the lifecycle of key file
     key_file_save_button = tk.Button(root, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
-    key_file_save_button.pack(pady=10)
- 
+    key_file_save_button.grid(row=5, column=0, columnspan=3, pady=10)
+
     # Decryption backup button
-    # TODO: add support for decryption with key file
-    run_decrypt_backup_button = tk.Button(root, text="Decrypt backup button", command=lambda: decrypt_backup_command(backup_password_entry))
-    run_decrypt_backup_button.pack(pady=20)
+    # TODO: add support for decryption with a key file
+    run_decrypt_backup_button = tk.Button(root, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
+    run_decrypt_backup_button.grid(row=6, column=0, columnspan=3, pady=20)
 
     # Button to run the backup check
     backup_check_button = tk.Button(root, text="Check Backup for Malware", command=check_backup)
-    backup_check_button.pack(pady=10)
+    backup_check_button.grid(row=7, column=0, columnspan=3, pady=10)
 
     # Tkinter event loop
     root.mainloop()
-    
+
