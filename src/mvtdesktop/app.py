@@ -3,13 +3,15 @@ from tkinter import filedialog, messagebox
 import subprocess
 
 def main():
+    widgets_to_enable = []
+    
     def is_apple_device_connected():
         try:
             # Check if an Apple device is connected with lsusb
             lsusb_result = subprocess.run(["lsusb"], capture_output=True, text=True, check=True)
 
             if "Apple" in lsusb_result.stdout:
-                # If an Apple device is found, ensure pairing prompt is displayed to user and run ideviceinfo
+                # If an Apple device is found, ensure pairing prompt is displayed to the user and run ideviceinfo
                 ensure_pairing()
                 ideviceinfo_result = subprocess.run(["ideviceinfo"], capture_output=True, text=True, check=True)
                 return ideviceinfo_result.stdout.strip()  # Return ideviceinfo output
@@ -35,14 +37,25 @@ def main():
             # If ideviceinfo returned valid data, then the iPhone is connected
             if "DeviceClass" in device_info:
                 status_label.config(text="iPhone successfully connected")
+                enable_widgets(widgets_to_enable)
             else:
                 # Prompt the user again for pairing
                 ensure_pairing()
+                disable_widgets(widgets_to_enable)
         else:
             status_label.config(text="Please connect your iPhone")
+            disable_widgets(widgets_to_enable)
 
         # Schedule the check to run again periodically
         root.after(5000, check_device_status)
+
+    def enable_widgets(widget_list):
+        for widget in widget_list:
+            widget['state'] = 'normal'
+
+    def disable_widgets(widget_list):
+        for widget in widget_list:
+            widget['state'] = 'disabled'
 
     def enable_backup_encryption():
         global encryption_enabled
@@ -77,7 +90,7 @@ def main():
             messagebox.showerror("Error", f"Error creating backup: {e.stderr}")
 
     def browse_path():
-        # Select a backup path with a filedialog
+        # Select a backup path with a file dialog
         selected_path = filedialog.askdirectory()
         backup_save_path_entry.delete(0, tk.END)
         backup_save_path_entry.insert(0, selected_path)
@@ -122,12 +135,12 @@ def main():
         except subprocess.CalledProcessError as e:
             messagebox.showerror("Error", f"Execution of backup check failed:\n{e.stderr}")
 
-    # Main window creation
+    # Main window
     root = tk.Tk()
     root.title("iPhone Connection Status")
 
     # W x H of the window
-    root.geometry("1200x800")
+    root.geometry("700x500")
 
     # Label to display the device connection status
     status_label = tk.Label(root, text="")
@@ -140,20 +153,23 @@ def main():
 
     # Create the label for encryption status
     encryption_label = tk.Label(root, text="")
-    update_encryption_labels()  # Initialize label based on encryption status
+    update_encryption_labels()
     encryption_label.grid(row=1, column=1, pady=10)
 
     # Backup Encryption Button
     button = tk.Button(root, text="Enable Backup Encryption", command=enable_backup_encryption)
     button.grid(row=1, column=0, pady=10)
+    widgets_to_enable.append(button)
 
     # Entry field for backup save path
     backup_save_path_entry = tk.Entry(root, width=40)
     backup_save_path_entry.grid(row=2, column=0, padx=2, pady=10)
+    widgets_to_enable.append(backup_save_path_entry)
 
     # Button to browse for a backup path
     browse_button = tk.Button(root, text="Browse", command=browse_path)
     browse_button.grid(row=2, column=1, padx=2, pady=10)
+    widgets_to_enable.append(browse_button)
 
     # Backup Encryption password entry widget
     backup_password_label = tk.Label(root, text="Enter Backup Encryption Password:")
@@ -161,25 +177,32 @@ def main():
 
     backup_password_entry = tk.Entry(root, show="*")
     backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
+    widgets_to_enable.append(backup_password_entry)
 
     # Button to create backup
     create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
     create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
+    widgets_to_enable.append(create_backup_button)
 
     # Button to save password to key file
     # TODO: manage securely the lifecycle of key file
     key_file_save_button = tk.Button(root, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
     key_file_save_button.grid(row=5, column=0, columnspan=3, pady=10)
+    widgets_to_enable.append(key_file_save_button)
 
     # Decryption backup button
     # TODO: add support for decryption with a key file
     run_decrypt_backup_button = tk.Button(root, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
     run_decrypt_backup_button.grid(row=6, column=0, columnspan=3, pady=20)
+    widgets_to_enable.append(run_decrypt_backup_button)
 
     # Button to run the backup check
     backup_check_button = tk.Button(root, text="Check Backup for Malware", command=check_backup)
     backup_check_button.grid(row=7, column=0, columnspan=3, pady=10)
+    widgets_to_enable.append(backup_check_button)
+
+    # Disable all widgets initially
+    disable_widgets(widgets_to_enable)
 
     # Tkinter event loop
     root.mainloop()
-
