@@ -137,67 +137,90 @@ def main():
 
     # Main window
     root = tk.Tk()
-    root.title("iPhone Connection Status")
+    root.title("MVT Desktop App")
+    root.geometry("1400x500")
+    #root.config(bg="lightgrey")
 
-    # W x H of the window
-    root.geometry("700x500")
-
-    # Label to display the device connection status
-    status_label = tk.Label(root, text="")
-    status_label.grid(row=0, column=0, columnspan=2, pady=10)
+    # Insights frame
+    insights_frame = tk.Frame(root, width=300, height=500)
+    insights_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
+    insights_frame.grid_propagate(False)
+    # Insights header
+    insights_header = tk.Label(insights_frame, text="Insights", font=('Helvetica', 16, 'bold'))
+    insights_header.grid(row=0, column=0, padx=20, pady=20)
+     
+    # Label for iPhone connection status
+    status_label = tk.Label(insights_frame, text="iPhone connection status", font=('Helvetica', 12))
+    # Adjust the grid placement of the main content to be to the right of the Insights area
+    status_label.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
 
     # Device detection loop
     check_device_status()
 
+    # Thin separator line
+    separator = tk.Frame(root, width=1, bg="white") 
+    separator.grid(row=0, column=1, rowspan=10, pady=10, sticky="ns")  
+
+    # Main Content Frame
+    main_content_frame = tk.Frame(root, width=800, height=500)
+    main_content_frame.grid(row=0, column=2, rowspan=10, sticky="nsew")
+    main_content_frame.grid_propagate(False)
+    # Main Content Header
+    main_content_header = tk.Label(main_content_frame, text="Main Workspace", font=('Helvetica', 16, 'bold'))
+    main_content_header.grid(row=0, column=0, padx=20, pady=20)
+
+    # encryption status
     encryption_enabled = False
 
     # Create the label for encryption status
-    encryption_label = tk.Label(root, text="")
+    encryption_label = tk.Label(main_content_frame, text="")
     update_encryption_labels()
-    encryption_label.grid(row=1, column=1, pady=10)
+    encryption_label.grid(row=1, column=0, padx=30, pady=10)
 
     # Backup Encryption Button
-    button = tk.Button(root, text="Enable Backup Encryption", command=enable_backup_encryption)
-    button.grid(row=1, column=0, pady=10)
+    button = tk.Button(main_content_frame, text="Enable Backup Encryption", command=enable_backup_encryption)
+    button.grid(row=1, column=1, pady=10)
     widgets_to_enable.append(button)
 
     # Entry field for backup save path
-    backup_save_path_entry = tk.Entry(root, width=40)
-    backup_save_path_entry.grid(row=2, column=0, padx=2, pady=10)
-    widgets_to_enable.append(backup_save_path_entry)
+    backup_save_path_entry = tk.Entry(main_content_frame, width=40)
+    backup_save_path_entry.grid(row=2, column=0, padx=30, pady=10)
+    #widgets_to_enable.append(backup_save_path_entry)
+    backup_save_path_entry['state'] = 'normal'
 
     # Button to browse for a backup path
-    browse_button = tk.Button(root, text="Browse", command=browse_path)
-    browse_button.grid(row=2, column=1, padx=2, pady=10)
-    widgets_to_enable.append(browse_button)
+    browse_button = tk.Button(main_content_frame, text="Browse", command=browse_path)
+    browse_button.grid(row=2, column=1, padx=5, pady=10)
+    #widgets_to_enable.append(browse_button)
+    browse_button['state'] = 'normal'
 
     # Backup Encryption password entry widget
-    backup_password_label = tk.Label(root, text="Enter Backup Encryption Password:")
-    backup_password_label.grid(row=3, column=0, padx=5, pady=10)
+    backup_password_label = tk.Label(main_content_frame, text="Enter Backup Encryption Password:")
+    backup_password_label.grid(row=3, column=0, padx=30, pady=10)
 
-    backup_password_entry = tk.Entry(root, show="*")
+    backup_password_entry = tk.Entry(main_content_frame, show="*")
     backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
     widgets_to_enable.append(backup_password_entry)
 
     # Button to create backup
-    create_backup_button = tk.Button(root, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
+    create_backup_button = tk.Button(main_content_frame, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
     create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
     widgets_to_enable.append(create_backup_button)
 
     # Button to save password to key file
     # TODO: manage securely the lifecycle of key file
-    key_file_save_button = tk.Button(root, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
+    key_file_save_button = tk.Button(main_content_frame, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
     key_file_save_button.grid(row=5, column=0, columnspan=3, pady=10)
     widgets_to_enable.append(key_file_save_button)
 
     # Decryption backup button
     # TODO: add support for decryption with a key file
-    run_decrypt_backup_button = tk.Button(root, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
+    run_decrypt_backup_button = tk.Button(main_content_frame, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
     run_decrypt_backup_button.grid(row=6, column=0, columnspan=3, pady=20)
     widgets_to_enable.append(run_decrypt_backup_button)
 
     # Button to run the backup check
-    backup_check_button = tk.Button(root, text="Check Backup for Malware", command=check_backup)
+    backup_check_button = tk.Button(main_content_frame, text="Check Backup for Malware", command=check_backup)
     backup_check_button.grid(row=7, column=0, columnspan=3, pady=10)
     widgets_to_enable.append(backup_check_button)
 
