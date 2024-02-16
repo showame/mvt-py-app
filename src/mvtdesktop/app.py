@@ -162,66 +162,91 @@ def main():
     separator.grid(row=0, column=1, rowspan=10, pady=10, sticky="ns")  
 
     # Main Content Frame
-    main_content_frame = tk.Frame(root, width=800, height=500)
+    main_content_frame = tk.Frame(root, width=1000, height=500)
     main_content_frame.grid(row=0, column=2, rowspan=10, sticky="nsew")
     main_content_frame.grid_propagate(False)
     # Main Content Header
     main_content_header = tk.Label(main_content_frame, text="Main Workspace", font=('Helvetica', 16, 'bold'))
     main_content_header.grid(row=0, column=0, padx=20, pady=20)
 
+    # Backup Creator Frame
+    backup_creator_encircling_frame = tk.Frame(main_content_frame, borderwidth=2, relief="groove")
+    backup_creator_encircling_frame.grid(row=2, column=0, rowspan=4, padx=10, pady=10, sticky="ew")
+    backup_creator_label = tk.Label(main_content_frame, text="Create Backup", fg="black")
+    backup_creator_label.place(x=backup_creator_encircling_frame.winfo_x(), y=backup_creator_encircling_frame.winfo_y() - backup_creator_label.winfo_height())
+    root.update_idletasks()
+    backup_creator_label.place_configure(x=backup_creator_encircling_frame.winfo_x() + 10, y=backup_creator_encircling_frame.winfo_y() - backup_creator_label.winfo_height() + 10)
+
     # encryption status
     encryption_enabled = False
-
     # Create the label for encryption status
-    encryption_label = tk.Label(main_content_frame, text="")
+    encryption_label = tk.Label(backup_creator_encircling_frame, text="")
     update_encryption_labels()
     encryption_label.grid(row=1, column=0, padx=30, pady=10)
 
     # Backup Encryption Button
-    button = tk.Button(main_content_frame, text="Enable Backup Encryption", command=enable_backup_encryption)
+    button = tk.Button(backup_creator_encircling_frame, text="Enable Backup Encryption", command=enable_backup_encryption)
     button.grid(row=1, column=1, pady=10)
     widgets_to_enable.append(button)
 
     # Entry field for backup save path
-    backup_save_path_entry = tk.Entry(main_content_frame, width=40)
+    backup_save_path_entry = tk.Entry(backup_creator_encircling_frame, width=40)
     backup_save_path_entry.grid(row=2, column=0, padx=30, pady=10)
-    #widgets_to_enable.append(backup_save_path_entry)
-    backup_save_path_entry['state'] = 'normal'
+    widgets_to_enable.append(backup_save_path_entry)
 
     # Button to browse for a backup path
-    browse_button = tk.Button(main_content_frame, text="Browse", command=browse_path)
+    browse_button = tk.Button(backup_creator_encircling_frame, text="Browse", command=browse_path)
     browse_button.grid(row=2, column=1, padx=5, pady=10)
-    #widgets_to_enable.append(browse_button)
-    browse_button['state'] = 'normal'
-
+    widgets_to_enable.append(browse_button)
+    
     # Backup Encryption password entry widget
-    backup_password_label = tk.Label(main_content_frame, text="Enter Backup Encryption Password:")
+    backup_password_label = tk.Label(backup_creator_encircling_frame, text="Enter Backup Encryption Password:")
     backup_password_label.grid(row=3, column=0, padx=30, pady=10)
 
-    backup_password_entry = tk.Entry(main_content_frame, show="*")
+    backup_password_entry = tk.Entry(backup_creator_encircling_frame, show="*")
     backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
     widgets_to_enable.append(backup_password_entry)
 
     # Button to create backup
-    create_backup_button = tk.Button(main_content_frame, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
+    create_backup_button = tk.Button(backup_creator_encircling_frame, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
     create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
     widgets_to_enable.append(create_backup_button)
 
+    # Backup Uploader Frame
+    backup_uploader_encircling_frame = tk.Frame(main_content_frame, borderwidth=2, relief="groove")
+    backup_uploader_encircling_frame.grid(row=6, column=0, rowspan=4, padx=10, pady=10, sticky="ew")
+    backup_uploader_label = tk.Label(main_content_frame, text="Upload Backup",  fg="black")
+    backup_uploader_label.place(x=backup_uploader_encircling_frame.winfo_x(), y=backup_uploader_encircling_frame.winfo_y() - backup_uploader_label.winfo_height())
+    root.update_idletasks()
+    backup_uploader_label.place_configure(x=backup_uploader_encircling_frame.winfo_x() + 10, y=backup_uploader_encircling_frame.winfo_y() - backup_uploader_label.winfo_height() + 10)
+
+    # Entry field for backup upload path
+    backup_upload_path_entry = tk.Entry(backup_uploader_encircling_frame, width=40)
+    backup_upload_path_entry.grid(row=2, column=0, padx=30, pady=10)
+    #widgets_to_enable.append(backup_save_path_entry)
+    backup_upload_path_entry['state'] = 'normal'
+
+    # Button to browse for a backup path
+    backup_upload_browse_button = tk.Button(backup_uploader_encircling_frame, text="Browse", command=browse_path)
+    backup_upload_browse_button.grid(row=2, column=1, padx=5, pady=10)
+    #widgets_to_enable.append(browse_button)
+    backup_upload_browse_button['state'] = 'normal'
+
     # Button to save password to key file
     # TODO: manage securely the lifecycle of key file
-    key_file_save_button = tk.Button(main_content_frame, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
+    key_file_save_button = tk.Button(backup_uploader_encircling_frame, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
     key_file_save_button.grid(row=5, column=0, columnspan=3, pady=10)
     widgets_to_enable.append(key_file_save_button)
 
     # Decryption backup button
     # TODO: add support for decryption with a key file
-    run_decrypt_backup_button = tk.Button(main_content_frame, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
+    run_decrypt_backup_button = tk.Button(backup_uploader_encircling_frame, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
     run_decrypt_backup_button.grid(row=6, column=0, columnspan=3, pady=20)
     widgets_to_enable.append(run_decrypt_backup_button)
 
     # Button to run the backup check
     backup_check_button = tk.Button(main_content_frame, text="Check Backup for Malware", command=check_backup)
-    backup_check_button.grid(row=7, column=0, columnspan=3, pady=10)
+    backup_check_button.grid(row=5, column=5, rowspan=2, columnspan=3, pady=10)
     widgets_to_enable.append(backup_check_button)
 
     # Disable all widgets initially
