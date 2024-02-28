@@ -1,256 +1,204 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, font
 import subprocess
+from mvtdesktop.mvt_utils import *
 
-def main():
-    widgets_to_enable = []
-    
-    def is_apple_device_connected():
-        try:
-            # Check if an Apple device is connected with lsusb
-            lsusb_result = subprocess.run(["lsusb"], capture_output=True, text=True, check=True)
+def configure_widget(widget, **kwargs):
+    default_settings = {'bg': '#dddddd'}
+    default_settings.update(kwargs)
+    widget.configure(**default_settings)
 
-            if "Apple" in lsusb_result.stdout:
-                # If an Apple device is found, ensure pairing prompt is displayed to the user and run ideviceinfo
-                ensure_pairing()
-                ideviceinfo_result = subprocess.run(["ideviceinfo"], capture_output=True, text=True, check=True)
-                return ideviceinfo_result.stdout.strip()  # Return ideviceinfo output
+class Application(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("MVT Desktop App")
+        self.geometry("1400x500")
+        self.config(bg="#dddddd")
+        self.create_widgets()
 
-        except subprocess.CalledProcessError:
-            return None
-
-    def ensure_pairing():
-        try:
-            # Run debug and pairing commands (sudo usbmuxd; idevicepair pair)
-            # subprocess.run(["sudo", "usbmuxd", "-f", "-d"], check=True)
-            subprocess.run(["idevicepair", "pair"], check=True)
-
-            print("Pairing started successfully")
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error starting pairing: {e.stderr}")
-
-    def check_device_status():
+    def check_device_status(self):
         device_info = is_apple_device_connected()
 
         if device_info is not None:
             # If ideviceinfo returned valid data, then the iPhone is connected
             if "DeviceClass" in device_info:
-                status_label.config(text="iPhone successfully connected")
-                enable_widgets(widgets_to_enable)
+                self.status_label.config(text="iPhone successfully connected")
             else:
                 # Prompt the user again for pairing
                 ensure_pairing()
-                disable_widgets(widgets_to_enable)
         else:
-            status_label.config(text="Please connect your iPhone")
-            disable_widgets(widgets_to_enable)
+            self.status_label.config(text="Please connect your iPhone")
 
         # Schedule the check to run again periodically
-        root.after(5000, check_device_status)
+        self.after(5000, self.check_device_status)
 
-    def enable_widgets(widget_list):
-        for widget in widget_list:
-            widget['state'] = 'normal'
+    def create_widgets(self):
+        # Insights frame
+        self.insights_frame = tk.Frame(self, width=300, height=500)
+        configure_widget(self.insights_frame)
+        self.insights_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
+        self.insights_frame.grid_propagate(False)
+        # Insights header
+        self.insights_header = tk.Label(self.insights_frame, text="Insights", font=('Helvetica', 16, 'bold'))
+        configure_widget(self.insights_header)
+        self.insights_header.grid(row=0, column=0, padx=12, pady=20, sticky="w")
+        
+        # Label for iPhone connection status
+        self.status_label = tk.Label(self.insights_frame, text="iPhone connection status", font=('Helvetica', 12))
+        configure_widget(self.status_label)
+        self.status_label.grid(row=4, column=0, columnspan=2, padx=12, pady=20)
 
-    def disable_widgets(widget_list):
-        for widget in widget_list:
-            widget['state'] = 'disabled'
+        # Device detection loop
+        self.check_device_status()
 
-    def enable_backup_encryption():
-        global encryption_enabled
-        try:
-            # Run idevicebackup2 to enable backup encryption
-            subprocess.run(["idevicebackup2", "-i", "encryption", "on"], check=True)
+        # Thin separator line
+        separator = tk.Frame(self, width=1, bg="white") 
+        separator.grid(row=0, column=1, rowspan=10, pady=10, sticky="ns")
 
-            # Update the encryption status and labels
-            encryption_enabled = True
-            update_encryption_labels()
+        # Main Content Frame
+        self.main_content_frame = tk.Frame(self, width=1000, height=500, padx=0)
+        configure_widget(self.main_content_frame)
+        self.main_content_frame.grid(row=0, column=2, rowspan=10, columnspan=6)
+        self.main_content_frame.grid_propagate(False)
+        # Main Content Header
+        self.main_content_header = tk.Label(self.main_content_frame, text="Main Workspace", font=('Helvetica', 16, 'bold'))
+        configure_widget(self.main_content_header)
+        self.main_content_header.grid(row=0, column=0, padx=12, pady=30, sticky="w")
 
-            messagebox.showinfo("Success", "Backup encryption enabled successfully")
+        self.active_font = font.Font(underline=0)
+        self.inactive_font = font.Font(underline=0)
+        self.active_color = "#efefef"
+        self.inactive_color = "#dddddd"
 
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Error enabling backup encryption: {e.stderr}")
+        # Buttons to switch between frames
+        self.backup_creator_button = tk.Button(self.main_content_frame, text="I want to create a backup                                      ", font=self.inactive_font, bg=self.inactive_color, relief='flat', command=lambda: self.show_frame("BackupCreatorFrame"))
+        self.backup_creator_button.grid(row=1, column=0, columnspan=1, sticky="ew")
 
-    def update_encryption_labels():
-        if encryption_enabled:
-            # Encryption is enabled
-            encryption_label.config(text="\u2713 Backup encryption enabled")  # Use checkmark symbol
-        else:
-            # Encryption is disabled
-            encryption_label.config(text="\u2717 Backup encryption disabled")  # Use cross symbol
+        self.backup_uploader_button = tk.Button(self.main_content_frame, text="I want to upload my backup                                         ", font=self.inactive_font, bg=self.inactive_color, relief='flat', command=lambda: self.show_frame("BackupUploaderFrame"))
+        self.backup_uploader_button.grid(row=1, column=1, columnspan=1, sticky="ew")
 
-    def create_backup(backup_path):
-        try:
-            # Create a full backup
-            subprocess.run(["idevicebackup2", "backup", "--full", backup_path], check=True)
-            messagebox.showinfo("Success", "Backup created successfully!")
+        # Thin horizontal line
+        first_horizontal_separator = tk.Frame(self.main_content_frame, height=1, width=1000, bg="white")
+        first_horizontal_separator.grid(row=2, column=0, columnspan=5, sticky="ew")
 
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Error creating backup: {e.stderr}")
+        self.frames = {}
+        for F in (BaseFrame, BackupCreatorFrame, BackupUploaderFrame):
+            frame_name = F.__name__
+            frame = F(parent=self.main_content_frame, controller=self)
+            self.frames[frame_name] = frame
+            frame.grid(row=3, column=0, columnspan=5, sticky="nsew")
 
-    def browse_path():
-        # Select a backup path with a file dialog
+        self.show_frame("BaseFrame")
+
+        # Thin horizontal line
+        second_horizontal_separator = tk.Frame(self.main_content_frame, height=1, width=1000, bg="white")
+        second_horizontal_separator.grid(row=8, column=0, columnspan=5, sticky="ew")
+
+        self.malware_analysis_header = tk.Label(self.main_content_frame, text="Malware Analysis", font=('Helvetica', 12, 'bold'))
+        configure_widget(self.malware_analysis_header)
+        self.malware_analysis_header.grid(row=9, column=0, columnspan=1, padx=12, pady=10, sticky="w")
+        
+        self.check_backup_button = tk.Button(self.main_content_frame, text="Run Malware analysis on Backup", command=check_backup)
+        self.check_backup_button.grid(row=10, column=0, columnspan=1, padx=10, pady=20, sticky='w')
+
+    def show_frame(self, frame_name):
+        if frame_name == "BackupCreatorFrame":
+            self.backup_creator_button.config(font=self.active_font, bg=self.active_color)
+            self.backup_uploader_button.config(font=self.inactive_font, bg=self.inactive_color)
+        elif frame_name == "BackupUploaderFrame":
+            self.backup_creator_button.config(font=self.inactive_font, bg=self.inactive_color)
+            self.backup_uploader_button.config(font=self.active_font, bg=self.active_color)
+        frame = self.frames[frame_name]
+        frame.tkraise()
+
+class BaseFrame(tk.Frame):
+    global selected_path
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        configure_widget(self)
+        self.create_widgets()
+
+    def create_widgets(self):
+        pass
+
+    def browse_path(self):
         selected_path = filedialog.askdirectory()
-        backup_save_path_entry.delete(0, tk.END)
-        backup_save_path_entry.insert(0, selected_path)
+        if selected_path:
+            self.backup_save_path_entry.delete(0, tk.END)
+            self.backup_save_path_entry.insert(0, selected_path)
 
-    def save_password_to_key_file(password_entry):
-        password = password_entry.get()
-        key_file_path = '/path/to/save/key'
-        backup_path = '/path/to/backup'
+class BackupCreatorFrame(BaseFrame):
+    def create_widgets(self):
+        self.backup_creator_header = tk.Label(self, text="Backup Creator", font=('Helvetica', 12, 'bold'))
+        configure_widget(self.backup_creator_header)
+        self.backup_creator_header.grid(row=0, column=0, columnspan=1, padx=12, pady=10, sticky="w")
+        
+        # Create the label for encryption status
+        self.encryption_label = tk.Label(self, text="")
+        self.encryption_label.grid(row=1, column=0, padx=12, pady=10)
+        self.update_encryption_label()
 
-        command = f'mvt-ios extract-key -p {password} -k {key_file_path} {backup_path}'
+        # Backup Encryption Button
+        button = tk.Button(self, text="Enable Backup Encryption", command=enable_backup_encryption)
+        button.grid(row=1, column=1, pady=10)
 
-        try:
-            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            messagebox.showinfo("Success", f"Password saved to key file:\n{key_file_path}")
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Command execution failed:\n{e.stderr}")
+        # Entry field for backup save path
+        self.backup_save_path_entry = tk.Entry(self, width=40)
+        self.backup_save_path_entry.grid(row=2, column=0, padx=5, pady=10)
+        self.backup_save_path_entry['state'] = 'normal'
 
-    def decrypt_backup_command(backup_password_entry):
-        password = backup_save_path_entry.get()
-        # TODO: get paths from the user
-        decrypted_path = '/path/to/decrypted'
-        encrypted_path = '/path/to/backup'
+        # Button to browse for a backup path
+        browse_button = tk.Button(self, text="Browse backup save path", command=self.browse_path)
+        browse_button.grid(row=2, column=1, padx=5, pady=10)
 
-        command = f'MVT_IOS_BACKUP_PASSWORD="{password}" mvt-ios decrypt-backup -d {decrypted_path} {encrypted_path}'
+        # Backup Encryption password entry widget
+        backup_password_label = tk.Label(self, text="Enter Backup Encryption Password:")
+        backup_password_label.grid(row=3, column=0, padx=30, pady=10)
 
-        try:
-            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            messagebox.showinfo("Success", result.stdout)
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Backup Decryption failed:\n{e.stderr}")
+        backup_password_entry = tk.Entry(self, show="*")
+        backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
 
-    def check_backup():
-        # TODO: get paths from the user
-        output_path = '/path/to/output'
-        check_path = '/path/to/backup/udid'
+        # Button to create backup
+        create_backup_button = tk.Button(self, text="Create Backup", command=lambda: create_backup(self.backup_save_path_entry.get()))
+        create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
 
-        command = f'mvt-ios check-backup --output {output_path} {check_path}'
+    def update_encryption_label(self):
+        # Update the label based on the encryption status
+        if encryption_enabled:
+            # Encryption is enabled -> checkmark symbol
+            self.encryption_label.config(text="\u2713 Backup encryption enabled")
+        else:
+            # Encryption is disabled -> cross symbol
+            self.encryption_label.config(text="\u2717 Backup encryption disabled")
 
-        try:
-            result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            messagebox.showinfo("Success", result.stdout)
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Error", f"Execution of backup check failed:\n{e.stderr}")
+class BackupUploaderFrame(BaseFrame):
+    def create_widgets(self):
+        self.backup_uploader_header = tk.Label(self, text="Backup Uploader", font=('Helvetica', 12, 'bold'))
+        configure_widget(self.backup_uploader_header)
+        self.backup_uploader_header.grid(row=0, column=0, columnspan=1, padx=12, pady=10, sticky="w")
 
-    # Main window
-    root = tk.Tk()
-    root.title("MVT Desktop App")
-    root.geometry("1400x500")
-    #root.config(bg="lightgrey")
+        #self.upload_path_label = tk.Label(self, text="Backup upload path:")
+        self.upload_path_entry = tk.Entry(self, width=40)
+        self.upload_path_entry.grid(row=1, column=0, padx=5, pady=10)
+        self.upload_path_entry['state'] = 'normal'
+        
+        self.upload_browse_button = tk.Button(self, text="Browse", command=self.browse_path)
+        self.upload_browse_button.grid(row=1, column=1, padx=5, pady=10)
+        self.upload_browse_button['state'] = 'normal'
 
-    # Insights frame
-    insights_frame = tk.Frame(root, width=300, height=500)
-    insights_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
-    insights_frame.grid_propagate(False)
-    # Insights header
-    insights_header = tk.Label(insights_frame, text="Insights", font=('Helvetica', 16, 'bold'))
-    insights_header.grid(row=0, column=0, padx=20, pady=20)
-     
-    # Label for iPhone connection status
-    status_label = tk.Label(insights_frame, text="iPhone connection status", font=('Helvetica', 12))
-    # Adjust the grid placement of the main content to be to the right of the Insights area
-    status_label.grid(row=4, column=0, columnspan=2, padx=5, pady=10)
+        backup_password_label = tk.Label(self, text="Enter Backup Encryption Password:")
+        backup_password_label.grid(row=2, column=0, padx=5, pady=10, sticky='w')
 
-    # Device detection loop
-    check_device_status()
+        self.backup_password_entry = tk.Entry(self, show="*")
+        self.backup_password_entry.grid(row=2, column=1, columnspan=2, pady=10, sticky='w')
+        
+        self.save_password_button = tk.Button(self, text="Save Password to Key File", command=lambda: save_password_to_key_file(self.backup_password_entry))
+        self.save_password_button.grid(row=2, column=4, padx=5, pady=10)
 
-    # Thin separator line
-    separator = tk.Frame(root, width=1, bg="white") 
-    separator.grid(row=0, column=1, rowspan=10, pady=10, sticky="ns")  
+        self.decrypt_backup_button = tk.Button(self, text="Decrypt Backup", command=lambda: decrypt_backup(self.backup_password_entry, self.upload_path_entry))
+        self.decrypt_backup_button.grid(row=3, column=0, padx=5, pady=20)
 
-    # Main Content Frame
-    main_content_frame = tk.Frame(root, width=1000, height=500)
-    main_content_frame.grid(row=0, column=2, rowspan=10, sticky="nsew")
-    main_content_frame.grid_propagate(False)
-    # Main Content Header
-    main_content_header = tk.Label(main_content_frame, text="Main Workspace", font=('Helvetica', 16, 'bold'))
-    main_content_header.grid(row=0, column=0, padx=20, pady=20)
-
-    # Backup Creator Frame
-    backup_creator_encircling_frame = tk.Frame(main_content_frame, borderwidth=2, relief="groove")
-    backup_creator_encircling_frame.grid(row=2, column=0, rowspan=4, padx=10, pady=10, sticky="ew")
-    backup_creator_label = tk.Label(main_content_frame, text="Create Backup", fg="black")
-    backup_creator_label.place(x=backup_creator_encircling_frame.winfo_x(), y=backup_creator_encircling_frame.winfo_y() - backup_creator_label.winfo_height())
-    root.update_idletasks()
-    backup_creator_label.place_configure(x=backup_creator_encircling_frame.winfo_x() + 10, y=backup_creator_encircling_frame.winfo_y() - backup_creator_label.winfo_height() + 10)
-
-    # encryption status
-    encryption_enabled = False
-    # Create the label for encryption status
-    encryption_label = tk.Label(backup_creator_encircling_frame, text="")
-    update_encryption_labels()
-    encryption_label.grid(row=1, column=0, padx=30, pady=10)
-
-    # Backup Encryption Button
-    button = tk.Button(backup_creator_encircling_frame, text="Enable Backup Encryption", command=enable_backup_encryption)
-    button.grid(row=1, column=1, pady=10)
-    widgets_to_enable.append(button)
-
-    # Entry field for backup save path
-    backup_save_path_entry = tk.Entry(backup_creator_encircling_frame, width=40)
-    backup_save_path_entry.grid(row=2, column=0, padx=30, pady=10)
-    widgets_to_enable.append(backup_save_path_entry)
-
-    # Button to browse for a backup path
-    browse_button = tk.Button(backup_creator_encircling_frame, text="Browse", command=browse_path)
-    browse_button.grid(row=2, column=1, padx=5, pady=10)
-    widgets_to_enable.append(browse_button)
-    
-    # Backup Encryption password entry widget
-    backup_password_label = tk.Label(backup_creator_encircling_frame, text="Enter Backup Encryption Password:")
-    backup_password_label.grid(row=3, column=0, padx=30, pady=10)
-
-    backup_password_entry = tk.Entry(backup_creator_encircling_frame, show="*")
-    backup_password_entry.grid(row=3, column=1, columnspan=3, pady=10)
-    widgets_to_enable.append(backup_password_entry)
-
-    # Button to create backup
-    create_backup_button = tk.Button(backup_creator_encircling_frame, text="Create Backup", command=lambda: create_backup(backup_save_path_entry.get()))
-    create_backup_button.grid(row=4, column=0, padx=3, pady=10, columnspan=3)
-    widgets_to_enable.append(create_backup_button)
-
-    # Backup Uploader Frame
-    backup_uploader_encircling_frame = tk.Frame(main_content_frame, borderwidth=2, relief="groove")
-    backup_uploader_encircling_frame.grid(row=6, column=0, rowspan=4, padx=10, pady=10, sticky="ew")
-    backup_uploader_label = tk.Label(main_content_frame, text="Upload Backup",  fg="black")
-    backup_uploader_label.place(x=backup_uploader_encircling_frame.winfo_x(), y=backup_uploader_encircling_frame.winfo_y() - backup_uploader_label.winfo_height())
-    root.update_idletasks()
-    backup_uploader_label.place_configure(x=backup_uploader_encircling_frame.winfo_x() + 10, y=backup_uploader_encircling_frame.winfo_y() - backup_uploader_label.winfo_height() + 10)
-
-    # Entry field for backup upload path
-    backup_upload_path_entry = tk.Entry(backup_uploader_encircling_frame, width=40)
-    backup_upload_path_entry.grid(row=2, column=0, padx=30, pady=10)
-    #widgets_to_enable.append(backup_save_path_entry)
-    backup_upload_path_entry['state'] = 'normal'
-
-    # Button to browse for a backup path
-    backup_upload_browse_button = tk.Button(backup_uploader_encircling_frame, text="Browse", command=browse_path)
-    backup_upload_browse_button.grid(row=2, column=1, padx=5, pady=10)
-    #widgets_to_enable.append(browse_button)
-    backup_upload_browse_button['state'] = 'normal'
-
-    # Button to save password to key file
-    # TODO: manage securely the lifecycle of key file
-    key_file_save_button = tk.Button(backup_uploader_encircling_frame, text="Save Password to Key File", command=lambda: save_password_to_key_file(backup_password_entry))
-    key_file_save_button.grid(row=5, column=0, columnspan=3, pady=10)
-    widgets_to_enable.append(key_file_save_button)
-
-    # Decryption backup button
-    # TODO: add support for decryption with a key file
-    run_decrypt_backup_button = tk.Button(backup_uploader_encircling_frame, text="Decrypt Backup", command=lambda: decrypt_backup_command(backup_password_entry))
-    run_decrypt_backup_button.grid(row=6, column=0, columnspan=3, pady=20)
-    widgets_to_enable.append(run_decrypt_backup_button)
-
-    # Button to run the backup check
-    backup_check_button = tk.Button(main_content_frame, text="Check Backup for Malware", command=check_backup)
-    backup_check_button.grid(row=5, column=5, rowspan=2, columnspan=3, pady=10)
-    widgets_to_enable.append(backup_check_button)
-
-    # Disable all widgets initially
-    disable_widgets(widgets_to_enable)
-
-    # Tkinter event loop
-    root.mainloop()
+def main():
+    app = Application()
+    app.mainloop()
